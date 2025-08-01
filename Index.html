@@ -2,71 +2,86 @@
 <html lang="da">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Wallet Tracker</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-body { font-family: Arial, sans-serif; background: #111; color: #fff; margin: 0; padding: 10px; }
-h2 { color: #0f0; font-size: 1.2em; }
-button { padding: 8px 12px; background: #0f0; color: #000; border: none; cursor: pointer; margin-bottom: 10px; }
-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-th, td { border: 1px solid #444; padding: 5px; font-size: 0.9em; }
-th { background: #222; }
-.warning { color: orange; font-weight: bold; }
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #121212;
+        color: white;
+        text-align: center;
+        margin: 0;
+        padding: 0;
+    }
+    h1 {
+        font-size: 1.6rem;
+        margin: 20px 0;
+    }
+    .address {
+        font-size: 0.9rem;
+        color: #aaa;
+        word-break: break-all;
+        margin-bottom: 15px;
+    }
+    .balance {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin: 20px 0;
+    }
+    .last-updated {
+        font-size: 0.8rem;
+        color: #bbb;
+    }
+    button {
+        background-color: #00aaff;
+        border: none;
+        color: white;
+        padding: 12px 20px;
+        font-size: 1rem;
+        border-radius: 8px;
+        cursor: pointer;
+        margin: 15px 0;
+    }
+    button:hover {
+        background-color: #0088cc;
+    }
 </style>
 </head>
 <body>
-<h2>Sporer adresse: <span id="addr"></span></h2>
-<button onclick="refresh()">Opdater</button>
-<div>Saldo: <span id="balance"></span> ETH</div>
-<table id="txlist">
-<tr><th>Hash</th><th>Type</th><th>Beløb</th><th>Til/Fra</th><th>Mærkning</th></tr>
-</table>
+
+<h1>USDC Wallet Tracker</h1>
+<div class="address">
+    0x4d7ac0c00f820b90b309de7a801c15176d35118c
+</div>
+
+<div class="balance" id="balance">Henter...</div>
+<div class="last-updated" id="updated"></div>
+
+<button onclick="getBalance()">Opdater nu</button>
 
 <script>
-const apiKey = 'Z6CSU9PIZDA4BSAI6Z5I15NWAAS456TIG2';
-const address = '0x4d7ac0c00f820b90b309de7a801c15176d35118c';
-document.getElementById('addr').innerText = address;
+const address = "0x4d7ac0c00f820b90b309de7a801c15176d35118c";
 
-async function fetchERC20() {
-  const url = `https://api.etherscan.io/api?module=account&action=tokentx&address=${address}&startblock=0&endblock=99999999&sort=desc&apikey=${apiKey}`;
-  const resp = await fetch(url);
-  const data = await resp.json();
-  return data.result.filter(tx => tx.tokenSymbol === 'USDC');
+// Denne API henter saldo (USDC ERC20)
+async function getBalance() {
+    document.getElementById("balance").textContent = "Henter...";
+    try {
+        const res = await fetch(`https://api.etherscan.io/api?module=account&action=tokenbalance&contractaddress=0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48&address=${address}&tag=latest&apikey=YourApiKeyToken`);
+        const data = await res.json();
+        if (data.result) {
+            const balance = parseInt(data.result) / 1e6; // USDC har 6 decimaler
+            document.getElementById("balance").textContent = balance.toFixed(2) + " USDC";
+        } else {
+            document.getElementById("balance").textContent = "Fejl";
+        }
+    } catch (err) {
+        document.getElementById("balance").textContent = "Fejl ved hentning";
+    }
+    document.getElementById("updated").textContent = "Sidst opdateret: " + new Date().toLocaleTimeString();
 }
 
-async function fetchBalance() {
-  const url = `https://api.etherscan.io/api?module=account&action=balance&address=${address}&tag=latest&apikey=${apiKey}`;
-  const resp = await fetch(url);
-  const data = await resp.json();
-  const eth = parseInt(data.result) / 1e18;
-  document.getElementById('balance').innerText = eth.toFixed(4);
-}
-
-const knownExchanges = [
-  '0x742d35cc6634c0532925a3b844bc454e4438f44e', // eksempel
-];
-
-async function refresh() {
-  await fetchBalance();
-  const txs = await fetchERC20();
-  const tbl = document.getElementById('txlist');
-  tbl.innerHTML = '<tr><th>Hash</th><th>Type</th><th>Beløb</th><th>Til/Fra</th><th>Mærkning</th></tr>';
-  txs.forEach(tx => {
-    const type = (tx.from.toLowerCase() === address.toLowerCase()) ? 'Ud' : 'Ind';
-    const mark = knownExchanges.includes(tx.to.toLowerCase()) ? '⚠️ Børs' : '';
-    const row = `<tr>
-      <td>${tx.hash.slice(0,10)}…</td>
-      <td>${type}</td>
-      <td>${tx.value / 1e6} USDC</td>
-      <td>${type==='Ud'?tx.to:tx.from}</td>
-      <td class="${mark ? 'warning' : ''}">${mark}</td>
-    </tr>`;
-    tbl.insertAdjacentHTML('beforeend', row);
-  });
-}
-
-refresh();
-setInterval(refresh, 30000);
+getBalance();
 </script>
+
 </body>
 </html>
