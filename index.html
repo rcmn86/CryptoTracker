@@ -1,67 +1,79 @@
 <!DOCTYPE html>
 <html lang="da">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>USDC Wallet Tracker</title>
-    <style>
-        body {
-            background-color: #121212;
-            color: white;
-            font-family: Arial, sans-serif;
-            text-align: center;
-            padding: 20px;
-        }
-        h1 { font-size: 26px; margin-bottom: 5px; }
-        .address { font-size: 12px; color: #aaa; margin-bottom: 20px; word-break: break-all; }
-        .balance { font-size: 40px; margin: 15px 0; }
-        button {
-            background-color: #2196F3;
-            border: none;
-            padding: 12px 20px;
-            color: white;
-            font-size: 18px;
-            border-radius: 6px;
-            cursor: pointer;
-        }
-        button:hover { background-color: #1976D2; }
-        .time { margin-top: 15px; font-size: 12px; color: #888; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>USDC Wallet Tracker</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #121212;
+        color: white;
+        text-align: center;
+        padding: 20px;
+    }
+    h1 {
+        margin-top: 30px;
+    }
+    .balance {
+        font-size: 2em;
+        margin: 20px 0;
+    }
+    button {
+        background-color: #2196F3;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        cursor: pointer;
+        border-radius: 6px;
+        font-size: 1em;
+    }
+    button:hover {
+        background-color: #0b7dda;
+    }
+</style>
 </head>
 <body>
 
 <h1>USDC Wallet Tracker</h1>
-<div class="address">0x4d7ac0c00f820b90b309de7a801c15176d35118c</div>
-<div id="balance" class="balance">Henter...</div>
-<button onclick="getBalance()">Opdater nu</button>
-<div id="time" class="time"></div>
+<p id="wallet">0x4d7ac0c00f820b90b309de7a801c15176d35118c</p>
+<div class="balance" id="balance">Indlæser...</div>
+<p id="timestamp"></p>
+<button onclick="loadBalance()">Opdater nu</button>
 
 <script>
-const walletAddress = "0x4d7ac0c00f820b90b309de7a801c15176d35118c";
-const apiKey = "CXTB4IUT31N836G93ZI3YQBEWBQEGGH5QS"; // Gratis Etherscan API-key
+const wallet = "0x4d7ac0c00f820b90b309de7a801c15176d35118c";
+const apiURL = `https://api.ethplorer.io/getAddressInfo/${wallet}?apiKey=freekey`;
 
-async function getBalance() {
+async function loadBalance() {
+    document.getElementById("balance").innerText = "Henter...";
     try {
-        const url = `https://api.etherscan.io/api?module=account&action=tokenbalance&contractaddress=0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48&address=${walletAddress}&tag=latest&apikey=${apiKey}`;
-        const response = await fetch(url);
-        const data = await response.json();
+        const res = await fetch(apiURL);
+        const data = await res.json();
 
-        if (data.status === "1") {
-            const usdcBalance = parseFloat(data.result) / 1e6;
-            document.getElementById("balance").innerText = usdcBalance.toFixed(2) + " USDC";
+        if (data && data.tokens) {
+            const usdcToken = data.tokens.find(t => 
+                t.tokenInfo.symbol.toUpperCase() === "USDC"
+            );
+            if (usdcToken) {
+                const rawBalance = usdcToken.balance / (10 ** usdcToken.tokenInfo.decimals);
+                document.getElementById("balance").innerText = rawBalance.toLocaleString() + " USDC";
+            } else {
+                document.getElementById("balance").innerText = "Ingen USDC fundet";
+            }
         } else {
-            document.getElementById("balance").innerText = "Fejl ved hentning";
+            document.getElementById("balance").innerText = "Ingen data";
         }
-    } catch (error) {
-        document.getElementById("balance").innerText = "Kunne ikke hente saldo";
+
+    } catch (err) {
+        document.getElementById("balance").innerText = "Fejl ved hentning";
     }
-    document.getElementById("time").innerText = "Sidst opdateret: " + new Date().toLocaleTimeString();
+
+    document.getElementById("timestamp").innerText = 
+        "Sidst opdateret: " + new Date().toLocaleTimeString();
 }
 
-// Hent ved indlæsning
-getBalance();
-// Automatisk opdatering hvert 60 sek.
-setInterval(getBalance, 60000);
+loadBalance();
 </script>
 
 </body>
