@@ -1,86 +1,67 @@
 <!DOCTYPE html>
 <html lang="da">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Wallet Tracker</title>
-<style>
-    body {
-        font-family: Arial, sans-serif;
-        background-color: #121212;
-        color: white;
-        text-align: center;
-        margin: 0;
-        padding: 0;
-    }
-    h1 {
-        font-size: 1.6rem;
-        margin: 20px 0;
-    }
-    .address {
-        font-size: 0.9rem;
-        color: #aaa;
-        word-break: break-all;
-        margin-bottom: 15px;
-    }
-    .balance {
-        font-size: 2.5rem;
-        font-weight: bold;
-        margin: 20px 0;
-    }
-    .last-updated {
-        font-size: 0.8rem;
-        color: #bbb;
-    }
-    button {
-        background-color: #00aaff;
-        border: none;
-        color: white;
-        padding: 12px 20px;
-        font-size: 1rem;
-        border-radius: 8px;
-        cursor: pointer;
-        margin: 15px 0;
-    }
-    button:hover {
-        background-color: #0088cc;
-    }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>USDC Wallet Tracker</title>
+    <style>
+        body {
+            background-color: #121212;
+            color: white;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+        }
+        h1 { font-size: 26px; margin-bottom: 5px; }
+        .address { font-size: 12px; color: #aaa; margin-bottom: 20px; word-break: break-all; }
+        .balance { font-size: 40px; margin: 15px 0; }
+        button {
+            background-color: #2196F3;
+            border: none;
+            padding: 12px 20px;
+            color: white;
+            font-size: 18px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        button:hover { background-color: #1976D2; }
+        .time { margin-top: 15px; font-size: 12px; color: #888; }
+    </style>
 </head>
 <body>
 
 <h1>USDC Wallet Tracker</h1>
-<div class="address">
-    0x4d7ac0c00f820b90b309de7a801c15176d35118c
-</div>
-
-<div class="balance" id="balance">Henter...</div>
-<div class="last-updated" id="updated"></div>
-
+<div class="address">0x4d7ac0c00f820b90b309de7a801c15176d35118c</div>
+<div id="balance" class="balance">Henter...</div>
 <button onclick="getBalance()">Opdater nu</button>
+<div id="time" class="time"></div>
 
 <script>
-const address = "0x4d7ac0c00f820b90b309de7a801c15176d35118c";
+const walletAddress = "0x4d7ac0c00f820b90b309de7a801c15176d35118c";
+const apiKey = "CXTB4IUT31N836G93ZI3YQBEWBQEGGH5QS"; // Gratis Etherscan API-key
 
-// Denne API henter saldo (USDC ERC20)
 async function getBalance() {
-    document.getElementById("balance").textContent = "Henter...";
     try {
-        const res = await fetch(`https://api.etherscan.io/api?module=account&action=tokenbalance&contractaddress=0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48&address=${address}&tag=latest&apikey=YourApiKeyToken`);
-        const data = await res.json();
-        if (data.result) {
-            const balance = parseInt(data.result) / 1e6; // USDC har 6 decimaler
-            document.getElementById("balance").textContent = balance.toFixed(2) + " USDC";
+        const url = `https://api.etherscan.io/api?module=account&action=tokenbalance&contractaddress=0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48&address=${walletAddress}&tag=latest&apikey=${apiKey}`;
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.status === "1") {
+            const usdcBalance = parseFloat(data.result) / 1e6;
+            document.getElementById("balance").innerText = usdcBalance.toFixed(2) + " USDC";
         } else {
-            document.getElementById("balance").textContent = "Fejl";
+            document.getElementById("balance").innerText = "Fejl ved hentning";
         }
-    } catch (err) {
-        document.getElementById("balance").textContent = "Fejl ved hentning";
+    } catch (error) {
+        document.getElementById("balance").innerText = "Kunne ikke hente saldo";
     }
-    document.getElementById("updated").textContent = "Sidst opdateret: " + new Date().toLocaleTimeString();
+    document.getElementById("time").innerText = "Sidst opdateret: " + new Date().toLocaleTimeString();
 }
 
+// Hent ved indlæsning
 getBalance();
+// Automatisk opdatering hvert 60 sek.
+setInterval(getBalance, 60000);
 </script>
 
 </body>
